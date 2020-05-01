@@ -1,0 +1,23 @@
+.list-cell {
+    -fx-font-family: "Consolas"
+}
+
+#Draggable {
+    -fx-max-width: Infinity;
+    -fx-max-height: Infinity;
+    -fx-font-size: 6em;
+    -fx-font-weight: bold;
+    -fx-focus-color: transparent;
+}
+
+#DropSpot {
+    -fx-fill: transparent;
+    -fx-stroke: DarkGrey;
+    -fx-stroke-width: 1px;
+}
+
+#DropText {
+    -fx-fill: transparent;
+    -fx-stroke: #000000A0;
+    -fx-stroke-width: 2px;
+}

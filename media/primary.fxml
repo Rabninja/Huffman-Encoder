@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.CheckMenuItem?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Rectangle?>
+
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<BorderPane xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" stylesheets="@stylesheet.css" fx:controller="huffman.PrimaryController">
+   <fx:define>
+      <FXCollections fx:id="counts" fx:factory="observableArrayList">
+
+      </FXCollections>
+      <FXCollections fx:id="encodings" fx:factory="observableArrayList">
+
+      </FXCollections>
+   </fx:define>
+   <top>
+      <MenuBar>
+         <Menu mnemonicParsing="false" text="File">
+            <items>
+               <MenuItem mnemonicParsing="false" text="Encode" onAction="#encodeSelector"/>
+               <MenuItem mnemonicParsing="false" text="Decode" onAction="#decodeSelector"/>
+               <MenuItem mnemonicParsing="false" text="Read Count" onAction="#readCount"/>
+            </items>
+         </Menu>
+         <Menu mnemonicParsing="false" text="Options">
+            <items>
+               <CheckMenuItem mnemonicParsing="false" fx:id="forceCheck" text="Force Encoding"/>
+            </items>
+         </Menu>
+         <Menu mnemonicParsing="false" text="Help">
+            <items>
+               <MenuItem mnemonicParsing="false" text="Information" onAction="#displayInformation"/>
+            </items>
+         </Menu>
+      </MenuBar>
+   </top>
+   <center>
+      <TabPane>
+         <tabs>
+            <Tab text="Drag &amp; Drop Encoding" closable="false">
+               <content>
+                  <GridPane fx:id="dragDrop">
+                     <StackPane id="Draggable" fx:id="encodePane" GridPane.rowIndex="0" GridPane.columnIndex="0">
+                        <Rectangle id="DropSpot" fx:id="encodeBox"/>
+                        <Text id="DropText" text="ENCODE"/>
+                     </StackPane>
+                     <StackPane id="Draggable" fx:id="decodePane" GridPane.rowIndex="1" GridPane.columnIndex="0">
+                        <Rectangle id="DropSpot" fx:id="decodeBox"/>
+                        <Text id="DropText" text="DECODE"/>
+                     </StackPane>
+                     <columnConstraints>
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100.0" percentWidth="100.0" prefWidth="100.0"/>
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints vgrow="SOMETIMES" minHeight="50.0" percentHeight="50.0" prefHeight="50.0" />
+                        <RowConstraints vgrow="SOMETIMES" minHeight="50.0" percentHeight="50.0" prefHeight="50.0" />
+                     </rowConstraints>
+                  </GridPane>
+               </content>
+            </Tab>
+            <Tab text="Character Count" closable="false">
+               <content>
+                  <ListView items="$counts"/>
+               </content>
+            </Tab>
+            <Tab text="Character Encoding" closable="false">
+               <content>
+                  <ListView items="$encodings"/>
+               </content>
+            </Tab>
+         </tabs>
+      </TabPane>
+   </center>
+   <bottom>
+      <StackPane>
+         <ProgressBar fx:id="progress" prefWidth="Infinity"/>
+         <Label fx:id="status" text="Waiting for input..."/>
+      </StackPane>
+
+   </bottom>
+</BorderPane>
