@@ -123,23 +123,29 @@ public class PrimaryController {
         if (file == null || (process != null && process.isAlive())) {
             return;
         }
-        process = new Thread(new EncodeFile(true, forceCheck, null, counts, encodings, progress, status, file));
+        final var counter = new VisualHuffmanCount(forceCheck, counts, encodings, file.getPath());
+        final var processor = new TaskProcessor(progress, status, counter);
+        process = new Thread(processor);
         process.start();
     }
 
-    private void encode(String source, String out) {
+    private void encode(String source, String destination) {
         if (process != null && process.isAlive()) {
             return;
         }
-        process = new Thread(new EncodeFile(false, forceCheck, out, counts, encodings, progress, status, new File(source)));
+        final var encoder = new VisualHuffmanEncoding(forceCheck, counts, encodings, source, destination);
+        final var processor = new TaskProcessor(progress, status, encoder);
+        process = new Thread(processor);
         process.start();
     }
 
-    private void decode(String source, String out) {
+    private void decode(String source, String destination) {
         if (process != null && process.isAlive()) {
             return;
         }
-        process = new Thread(new DecodeFile(out, counts, encodings, progress, status, new File(source)));
+        final var decoder = new VisualHuffmanDecoding(counts, encodings, source, destination);
+        final var processor = new TaskProcessor(progress, status, decoder);
+        process = new Thread(processor);
         process.start();
     }
 

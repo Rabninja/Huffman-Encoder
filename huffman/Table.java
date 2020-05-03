@@ -17,8 +17,9 @@ public class Table<E> implements Iterable<Table.TablePair<E>> {
 
         @Override
         public String toString() {
-            char ascii = index < 32 ? (char)1 : (char)index;
-            return String.format("%-5c%-7d%-12s=   ", ascii, index, Integer.toBinaryString(index)) + value;
+            final char INVALID_ASCII = (char)1;
+            final char visual = index < 32 ? INVALID_ASCII : (char)index;
+            return String.format("%-5c%-7d%-12s=   ", visual, index, Integer.toBinaryString(index)) + value;
         }
     }
 

@@ -5,90 +5,6 @@ import java.io.InputStream;
 import java.util.PriorityQueue;
 
 public class HuffmanTree {
-    public class Node implements Comparable<Node> {
-        private int character;
-        private long priority;
-        private Node left;
-        private Node right;
-
-        public Node(int character, long priority) {
-            this(character, priority, null, null);
-        }
-
-        public Node(int character, long priority, Node left, Node right) {
-            this.character = character;
-            this.priority = priority;
-            this.left = left;
-            this.right = right;
-        }
-
-        public Node getLeft() {
-            return left;
-        }
-
-        public Node getRight() {
-            return right;
-        }
-
-        public int getCharacter() {
-            return character;
-        }
-
-        public boolean isCharacter() {
-            return character >= 0;
-        }
-
-        @Override
-        public int compareTo(Node rhs) {
-            return Long.compare(priority, rhs.priority);
-        }
-    }
-
-    private Node root;
-    private int length;
-
-    public HuffmanTree() {
-
-    }
-
-    public void initialize(TableCounter counts) {
-        final PriorityQueue<Node> queue = new PriorityQueue<>();
-        length = counts.getRange();
-
-        for (var value : counts) {
-            if (value.value > 0) {
-                queue.add(new Node(value.index, value.value));
-            }
-        }
-
-        while (queue.size() > 1) {
-            final var left = queue.remove();
-            final var right = queue.remove();
-            queue.add(new Node(-1, left.priority+right.priority, left, right));
-        }
-        if (!queue.isEmpty()) {
-            root = queue.remove();
-        }
-    }
-
-    public Table<String> getEncodings() {
-        Table<String> encoder = new Table<>(String.class, length);
-        traverse(root, "", encoder);
-        return encoder;
-    }
-
-    private void traverse(Node node, String encoding, Table<String> encoder) {
-        if (node == null) {
-            return;
-        }
-        if (node.character >= 0) {
-            encoder.set(node.character, encoding);
-        }
-
-        traverse(node.left, encoding+"0", encoder);
-        traverse(node.right, encoding+"1", encoder);
-    }
-
     private static class StreamData {
         public int leafs;
         public int bit;
@@ -111,8 +27,84 @@ public class HuffmanTree {
         }
     }
 
+    public static class TreeNode implements Comparable<TreeNode> {
+        private int character;
+        private long priority;
+        private TreeNode left;
+        private TreeNode right;
+
+        public TreeNode(int character, long priority) {
+            this(character, priority, null, null);
+        }
+
+        public TreeNode(int character, long priority, TreeNode left, TreeNode right) {
+            this.character = character;
+            this.priority = priority;
+            this.left = left;
+            this.right = right;
+        }
+
+        public TreeNode getLeft() {
+            return left;
+        }
+
+        public TreeNode getRight() {
+            return right;
+        }
+
+        public int getCharacter() {
+            return character;
+        }
+
+        public boolean isCharacter() {
+            return character >= 0;
+        }
+
+        @Override
+        public int compareTo(TreeNode rhs) {
+            return Long.compare(priority, rhs.priority);
+        }
+    }
+
+    private TreeNode root;
+    private int length;
+
+    public HuffmanTree() {
+
+    }
+
+    public void initialize(TableCounter counts) {
+        final PriorityQueue<TreeNode> queue = new PriorityQueue<>();
+        length = counts.getRange();
+
+        for (var value : counts) {
+            if (value.value > 0) {
+                queue.add(new TreeNode(value.index, value.value));
+            }
+        }
+
+        while (queue.size() > 1) {
+            final var left = queue.remove();
+            final var right = queue.remove();
+            queue.add(new TreeNode(-1, left.priority+right.priority, left, right));
+        }
+        if (!queue.isEmpty()) {
+            root = queue.remove();
+
+            if (root.left == null) {
+                root = new TreeNode(-1, root.priority, root, null);
+            }
+        }
+    }
+
+    public Table<String> getEncodings() {
+        Table<String> encoder = new Table<>(String.class, length);
+        traverse(root, "", encoder);
+        return encoder;
+    }
+
     public void fromStream(int length, int leafs, InputStream stream) {
-        root = new Node(-1, 0, null, null);
+        root = new TreeNode(-1, 0, null, null);
         this.length = length;
         try {
             final int focus = stream.read();
@@ -122,7 +114,7 @@ public class HuffmanTree {
         }
     }
 
-    public Node getRoot() {
+    public TreeNode getRoot() {
         return root;
     }
 
@@ -134,7 +126,7 @@ public class HuffmanTree {
         return builder.toString();
     }
 
-    private void buildTree(Node node, StringBuilder builder) {
+    private void buildTree(TreeNode node, StringBuilder builder) {
         if (node == null) {
             return;
         }
@@ -146,7 +138,7 @@ public class HuffmanTree {
         buildTree(node.right, builder);
     }
 
-    private void extractNode(Node node, StreamData data, InputStream stream, boolean left) throws IOException {
+    private void extractNode(TreeNode node, StreamData data, InputStream stream, boolean left) throws IOException {
         if (data.leafs > 0) {
             if (data.bit == 0) {
                 data.focus = stream.read();
@@ -161,30 +153,42 @@ public class HuffmanTree {
                 data.bit >>= 1;
                 data.leafs--;
                 if (left) {
-                    node.left = new Node(character, 0, null, null);
+                    node.left = new TreeNode(character, 0, null, null);
                 }
                 else {
-                    node.right = new Node(character, 0, null, null);
+                    node.right = new TreeNode(character, 0, null, null);
                 }
             } else {
                 data.bit >>= 1;
                 if (left) {
-                    node.left = new Node(-1, 0, null, null);
+                    node.left = new TreeNode(-1, 0, null, null);
                     fromStream(node.left, data, stream);
                 }
                 else {
-                    node.right = new Node(-1, 0, null, null);
+                    node.right = new TreeNode(-1, 0, null, null);
                     fromStream(node.right, data, stream);
                 }
             }
         }
     }
 
-    private void fromStream(Node node, StreamData data, InputStream stream) throws IOException {
+    private void fromStream(TreeNode node, StreamData data, InputStream stream) throws IOException {
         if (data.leafs == 0) {
             return;
         }
         extractNode(node, data, stream, true);
         extractNode(node, data, stream, false);
+    }
+
+    private void traverse(TreeNode node, String encoding, Table<String> encoder) {
+        if (node == null) {
+            return;
+        }
+        if (node.character >= 0) {
+            encoder.set(node.character, encoding);
+        }
+
+        traverse(node.left, encoding+"0", encoder);
+        traverse(node.right, encoding+"1", encoder);
     }
 }
