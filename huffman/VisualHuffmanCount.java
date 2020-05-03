@@ -4,6 +4,8 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.scene.control.CheckMenuItem;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class VisualHuffmanCount extends ProgressableTask {
     private final HuffmanCoding encoder = new HuffmanCoding();
     private final ObservableList<String> counts;
@@ -11,9 +13,11 @@ public class VisualHuffmanCount extends ProgressableTask {
     private final CheckMenuItem force;
     private final String source;
     private final TaskPhase[] phases = new TaskPhase[] {
-        new TaskPhase("Counting character occurrences...", 0.25, this::countCharacters),
-        new TaskPhase("Updating character count tab...", 0.50, this::updateCharacterCount),
-        new TaskPhase("Finished counting characters...", 1., (RunnableTask) this::cleanup)
+        new TaskPhase("Counting character occurrences...", 0.0, this::countCharacters),
+        new TaskPhase("Updating character count tab...", 0.8, this::updateCharacterCount),
+        new TaskPhase("Finished counting characters...", 1., (AtomicReference<Double> ignored) -> {
+            cleanup();
+        })
     };
 
     public VisualHuffmanCount(CheckMenuItem forced, ObservableList<String> counts, ObservableList<String> encodings, String source) {
@@ -33,11 +37,11 @@ public class VisualHuffmanCount extends ProgressableTask {
 
     }
 
-    private void countCharacters() {
-        encoder.readCounts(source);
+    private void countCharacters(AtomicReference<Double> progress) {
+        encoder.readCounts(source, progress);
     }
 
-    private void updateCharacterCount() {
+    private void updateCharacterCount(AtomicReference<Double> progress) {
         Platform.runLater(() -> {
             counts.clear();
 

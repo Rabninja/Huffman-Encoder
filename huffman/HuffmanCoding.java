@@ -1,6 +1,7 @@
 package huffman;
 
 import java.io.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class HuffmanCoding {
     public static final byte[] INPUT_BUFFER = new byte[65536];
@@ -16,7 +17,9 @@ public class HuffmanCoding {
             new TaskPhase("Building huffman tree...", 0.45, this::createTree),
             new TaskPhase("Encoding characters...", 0.5, this::createEncodings),
             new TaskPhase("Writing to destination...", .7, this::encodeSource),
-            new TaskPhase("Finished encoding file...", 1., this::cleanup)
+            new TaskPhase("Finished encoding file...", 1., (AtomicReference<Double> ignored) -> {
+                cleanup();
+            })
         };
         private final String source;
         private final String destination;
@@ -36,20 +39,20 @@ public class HuffmanCoding {
 
         }
 
-        private void count() throws IOException {
-            readCounts(source);
+        private void count(AtomicReference<Double> progress) throws IOException {
+            readCounts(source, progress);
         }
 
-        private void createTree() throws IOException {
+        private void createTree(AtomicReference<Double> progress) throws IOException {
             buildTree();
         }
 
-        private void createEncodings() throws IOException {
+        private void createEncodings(AtomicReference<Double> progress) throws IOException {
             buildEncodings();
         }
 
-        private void encodeSource() throws IOException {
-            writeToFile(source, destination);
+        private void encodeSource(AtomicReference<Double> progress) throws IOException {
+            writeToFile(source, destination, progress);
         }
     }
 
@@ -59,11 +62,14 @@ public class HuffmanCoding {
             new TaskPhase("Verifying huffman file...", 0., this::verifySource),
             new TaskPhase("Extracting huffman tree...", 0.1, this::extractTree),
             new TaskPhase("Decoding file...", .7, this::decodeSource),
-            new TaskPhase("Finished decoding file...", 1., (RunnableTask) this::cleanup)
+            new TaskPhase("Finished decoding file...", 1., (AtomicReference<Double> ignored) -> {
+                cleanup();
+            })
         };
         private InputStream input;
         private final String source;
         private final String destination;
+        private long length;
 
         public Decode(String source, String destination) {
             this.source = source;
@@ -87,23 +93,24 @@ public class HuffmanCoding {
             }
         }
 
-        private void openSource() throws IOException {
+        private void openSource(AtomicReference<Double> progress) throws IOException {
+            length = new File(source).length();
             final FileInputStream fin = new FileInputStream(source);
             input = new BufferedInputStream(fin);
         }
 
-        private void verifySource() throws IOException {
+        private void verifySource(AtomicReference<Double> progress) throws IOException {
             if (!validateHuffman(input)) {
                 throw new VisualHuffmanDecoding.InvalidHuffman();
             }
         }
 
-        private void extractTree() throws IOException {
+        private void extractTree(AtomicReference<Double> progress) throws IOException {
             extractEncodings(input);
         }
 
-        private void decodeSource() throws IOException {
-            decodeToFile(input, destination);
+        private void decodeSource(AtomicReference<Double> progress) throws IOException {
+            decodeToFile(input, destination, length, progress);
         }
     }
 
@@ -163,12 +170,12 @@ public class HuffmanCoding {
         return size;
     }
 
-    public long headerBytes() {
+    public long getHeaderBytes() {
         return Short.BYTES + (tree.toString().length() + Byte.SIZE - 1) / Byte.SIZE + 2;
     }
 
     public long getTotalCompressionBytes() {
-        final long header = headerBytes();
+        final long header = getHeaderBytes();
         final long translated = (getCompressionSize() + Byte.SIZE - 1) / Byte.SIZE;
 
         return header + translated;
@@ -190,10 +197,13 @@ public class HuffmanCoding {
         encoding = tree.getEncodings();
     }
 
-    public void readCounts(String filepath) throws HuffmanIOExcept {
+    public void readCounts(String source, AtomicReference<Double> progress) throws HuffmanIOExcept {
+        final long length = new File(source).length();
+        long total = 0;
         FileInputStream file = null;
         try {
-            file = new FileInputStream(filepath);
+            file = new FileInputStream(source);
+
             BufferedInputStream stream = new BufferedInputStream(file);
 
             counter = new TableCounter(256);
@@ -203,6 +213,8 @@ public class HuffmanCoding {
                 for (int i = 0; i < read; ++i) {
                     counter.count(INPUT_BUFFER[i] & 0xFF);
                 }
+                total += read;
+                progress.set((double)total / length);
             }
         } catch (IOException ioe) {
             throw new HuffmanIOExcept();
@@ -247,8 +259,9 @@ public class HuffmanCoding {
         return true;
     }
 
-    private void decodeToFile(InputStream input, String pathway) throws HuffmanIOExcept {
+    private void decodeToFile(InputStream input, String pathway, long length, AtomicReference<Double> progress) throws HuffmanIOExcept {
         FileOutputStream fout = null;
+        long total = getHeaderBytes();
         try {
             fout = new FileOutputStream(pathway);
 
@@ -288,6 +301,8 @@ public class HuffmanCoding {
                 }
                 fout.write(outBuffer, 0, slot);
                 slot = 0;
+                total += read;
+                progress.set((double)total / length);
             }
             fout.flush();
         } catch (IOException ioe) {
@@ -303,10 +318,12 @@ public class HuffmanCoding {
         }
     }
 
-    private void writeToFile(String source, String destination) throws HuffmanIOExcept {
+    private void writeToFile(String source, String destination, AtomicReference<Double> progress) throws HuffmanIOExcept {
+        final long length = new File(source).length();
+        long total = 0;
         FileInputStream fin = null;
         FileOutputStream fout = null;
-        StringBuilder builder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder();
         try {
             fin = new FileInputStream(source);
             fout = new FileOutputStream(destination);
@@ -327,6 +344,8 @@ public class HuffmanCoding {
                         builder.delete(0, 262144);
                     }
                 }
+                total += read;
+                progress.set((double)total / length);
             }
             dumpBuilder(output, builder);
             output.flush();

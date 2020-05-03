@@ -4,6 +4,8 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.scene.control.CheckMenuItem;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class VisualHuffmanEncoding extends ProgressableTask {
     private final HuffmanCoding encoder = new HuffmanCoding();
     private final ObservableList<String> counts;
@@ -17,13 +19,15 @@ public class VisualHuffmanEncoding extends ProgressableTask {
     private final TaskPhase[] phases = new TaskPhase[] {
         new TaskPhase("Initializing encoder...", 0., this::initialize),
         new TaskPhase("Counting character occurrences...", 0.05, this::encodeStep),
-        new TaskPhase("Updating character count tab...", 0.30, this::updateCharacterCount),
-        new TaskPhase("Building huffman tree...", 0.40, this::encodeStep),
-        new TaskPhase("Encoding characters...", 0.45, this::encodeStep),
-        new TaskPhase("Verifying encoding size...", 0.50, this::verifyEncodingSize),
-        new TaskPhase("Update character encoding tab...", 0.6, this::updateCharacterEncoding),
-        new TaskPhase("Writing to destination...", .65, this::encodeStep),
-        new TaskPhase("Finished encoding file...", 1., this::cleanup)
+        new TaskPhase("Updating character count tab...", 0.35, this::updateCharacterCount),
+        new TaskPhase("Building huffman tree...", 0.36, this::encodeStep),
+        new TaskPhase("Encoding characters...", 0.40, this::encodeStep),
+        new TaskPhase("Verifying encoding size...", 0.42, this::verifyEncodingSize),
+        new TaskPhase("Update character encoding tab...", 0.43, this::updateCharacterEncoding),
+        new TaskPhase("Writing to destination...", .45, this::encodeStep),
+        new TaskPhase("Finished encoding file...", 1., (AtomicReference<Double> ignored) -> {
+            cleanup();
+        })
     };
 
     public static class PoorEncodingException extends RuntimeException {
@@ -50,7 +54,7 @@ public class VisualHuffmanEncoding extends ProgressableTask {
         encode.cleanup();
     }
 
-    private void updateCharacterCount() {
+    private void updateCharacterCount(AtomicReference<Double> progress) {
         Platform.runLater(() -> {
             counts.clear();
 
@@ -60,7 +64,7 @@ public class VisualHuffmanEncoding extends ProgressableTask {
         });
     }
 
-    private void updateCharacterEncoding() {
+    private void updateCharacterEncoding(AtomicReference<Double> progress) {
         Platform.runLater(() -> {
             encodings.clear();
 
@@ -70,15 +74,15 @@ public class VisualHuffmanEncoding extends ProgressableTask {
         });
     }
 
-    private void initialize() {
+    private void initialize(AtomicReference<Double> progress) {
         encode = encoder.getEncoder(source, destination);
     }
 
-    private void encodeStep() throws Exception {
-        encode.getPhases()[encodeStep++].run();
+    private void encodeStep(AtomicReference<Double> progress) throws Exception {
+        encode.getPhases()[encodeStep++].run(progress);
     }
 
-    private void verifyEncodingSize() {
+    private void verifyEncodingSize(AtomicReference<Double> progress) {
         final long compressedBytes = encoder.getTotalCompressionBytes();
         final long uncompressedBytes = encoder.getUncompressedBytes();
         if (!force.isSelected() && compressedBytes > uncompressedBytes) {
